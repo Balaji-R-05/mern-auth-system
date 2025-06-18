@@ -1,9 +1,9 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
+  "description": "MERN Authentication System With Password Reset, Email Verification and JWT auth",
   "license": "ISC",
-  "author": "Dragon",
+  "author": "Balaji R",
   "type": "module",
   "main": "server.js",
   "scripts": {
