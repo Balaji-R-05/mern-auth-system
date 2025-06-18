@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import transporter from '../config/nodemailer.js';
 import User from '../models/User.js';
+import mongoose from "mongoose";
 
 export const register = async (req, res) => {
     const { name, email, password } = req.body;
@@ -99,8 +100,6 @@ export const logout = async (req, res) => {
     }
 }
 
-import mongoose from "mongoose";
-
 export const sendVerifyOTP = async (req, res) => {
     try {
 
@@ -109,7 +108,7 @@ export const sendVerifyOTP = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.json({ success: false, message: "Invalid user ID" });
         }
-        console.log("📦 userId =", userId, "| type:", typeof userId);
+        // console.log("📦 userId =", userId, "| type:", typeof userId);
         const user = await User.findById(userId);
         if (!user) return res.json({ success: false, message: "User not found" });
 
@@ -140,8 +139,7 @@ export const sendVerifyOTP = async (req, res) => {
     } catch (error) {
         return res.json({ success: false, message: error.message });
     }
-};
-
+}
 
 export const verifyEmail = async (req, res) => {
     const { userId, otp } = req.body;
@@ -175,3 +173,82 @@ export const verifyEmail = async (req, res) => {
         return res.json({ success: false, message: error.message });
     }
 }
+
+export const isAuthenticated = async (req, res) => {
+    try {
+        return res.json({ success: true })
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+}
+
+export const sendResetOTP = async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.json({ success: false, message: "Email is required!" });
+    }
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: "User not found!" });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        user.resetOTP = otp;
+        user.resetOTPExpireAt = Date.now() + 15 * 60 * 1000;
+        await user.save();
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: user.email,
+            subject: "Password Reset OTP",
+            text: `Your OTP for resetting your password is ${otp}. Use this password to proceed with resetting your password.`
+        };
+
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (err) {
+            console.error("Mail Error:", err.message);
+        }
+
+        return res.json({ success: true, message: "Reset OTP sent to your email." });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+}
+
+export const resetPassword = async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+        return res.json({ success: false, message: "Email, OTP and new password are required" });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: "User not found" });
+        }
+
+        if (!user.resetOTP === "" || user.resetOTP !== otp.toString()) {
+            return res.json({ success: false, message: "Invalid OTP!" });
+        }
+
+        if (user.resetOTPExpireAt < Date.now()) {
+            return res.json({ success: false, message: "OTP Expired!" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        user.password = hashedPassword;
+        user.resetOTP = '';
+        user.resetOTPExpireAt = 0;
+        await user.save();
+
+        return res.json({ success: true, message: "Password has been reset successfully!" });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
