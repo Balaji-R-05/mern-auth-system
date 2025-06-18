@@ -1,4 +1,3 @@
-// import { verify } from "jsonwebtoken";
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
@@ -10,8 +9,8 @@ const UserSchema = new mongoose.Schema({
     isAccountVerified: { type: Boolean, default: false },
     resetOTP: { type: String, default: '' },
     resetOTPExpireAt: { type: Number, default: 0 }
-})
+});
 
-const userModel = mongoose.models.user || mongoose.model('user', UserSchema);
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
 
-export default userModel;
+export default User;
