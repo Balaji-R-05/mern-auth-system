@@ -1,8 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import transporter from '../config/nodemailer.js';
-import User from '../models/User.js';
 import mongoose from "mongoose";
+
+import transporter from '../config/nodemailer.js';
+import userModel from '../models/User.js';
+
 
 export const register = async (req, res) => {
     const { name, email, password } = req.body;
@@ -11,13 +13,12 @@ export const register = async (req, res) => {
     }
 
     try {
-        const existingUser = await User.findOne({ email });
+        const existingUser = await userModel.findOne({ email });
         if (existingUser) {
             return res.json({ success: false, message: "User already exists!" });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = new User({
+        const user = new userModel({
             name, email, password: hashedPassword
         });
         await user.save();
@@ -59,7 +60,7 @@ export const login = async (req, res) => {
     }
 
     try {
-        const user = await User.findOne({ email });
+        const user = await userModel.findOne({ email });
         if (!user) {
             return res.json({ success: false, message: "Invalid email" });
         }
@@ -103,20 +104,20 @@ export const logout = async (req, res) => {
 export const sendVerifyOTP = async (req, res) => {
     try {
 
-        const { userId } = req.body;
+        const userId = req.userId;
 
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.json({ success: false, message: "Invalid user ID" });
         }
-        // console.log("📦 userId =", userId, "| type:", typeof userId);
-        const user = await User.findById(userId);
+
+        const user = await userModel.findById(userId);
         if (!user) return res.json({ success: false, message: "User not found" });
 
         if (user.isAccountVerified) {
             return res.json({ success: false, message: "Account already verified" });
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000);
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
         user.verifyOTP = otp;
         user.verifyOTPExpireAt = Date.now() + 24 * 60 * 60 * 1000;
         await user.save();
@@ -142,13 +143,14 @@ export const sendVerifyOTP = async (req, res) => {
 }
 
 export const verifyEmail = async (req, res) => {
-    const { userId, otp } = req.body;
+    const userId = req.userId;
+    const { otp } = req.body;
 
     if (!userId || !otp) {
         return res.json({ success: false, message: "Missing credentials" });
     }
     try {
-        const user = await User.findById(userId);
+        const user = await userModel.findById(userId);
 
         if (!user) {
             return res.json({ success: false, message: "User not found!" });
@@ -188,14 +190,14 @@ export const sendResetOTP = async (req, res) => {
         return res.json({ success: false, message: "Email is required!" });
     }
     try {
-        const user = await User.findOne({ email });
+        const user = await userModel.findOne({ email });
         if (!user) {
             return res.json({ success: false, message: "User not found!" });
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000);
         user.resetOTP = otp;
-        user.resetOTPExpireAt = Date.now() + 15 * 60 * 1000;
+        user.resetOTPExpireAt = Date.now() + (15 * 60 * 1000);
         await user.save();
 
         const mailOptions = {
@@ -226,7 +228,7 @@ export const resetPassword = async (req, res) => {
     }
 
     try {
-        const user = await User.findOne({ email });
+        const user = await userModel.findOne({ email });
         if (!user) {
             return res.json({ success: false, message: "User not found" });
         }
