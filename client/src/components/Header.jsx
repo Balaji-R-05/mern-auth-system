@@ -1,8 +1,10 @@
 import React, { useContext } from 'react';
 import { assets } from '../assets/assets';
 import { AppContent } from '../context/AppContext';
+import { useNavigate } from 'react-router';
 
 const Header = () => {
+  const navigate = useNavigate();
   const {userData} = useContext(AppContent);
 
   return (
@@ -18,7 +20,7 @@ const Header = () => {
       <p className="max-w-md mb-8 text-gray-800">
         Take a quick tour of the authentication system built with MongoDB, Express, React, and Node. Get started easily and integrate secure login features in no time!
       </p>
-      <button className="border border-gray-600 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all">
+      <button onClick={() => navigate("/login")} className="border border-gray-600 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all">
         Start Tour
       </button>
     </div>

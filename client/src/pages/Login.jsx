@@ -75,7 +75,10 @@ const Login = () => {
                             value={password}
                             type="password" placeholder="Password" className='bg-transparent outline-none' required />
                     </div>
-                    {state !== "Sign Up" && (<p onClick={() => navigate("/reset-password")} className='mb-6 text-indigo-600 cursor-pointer'>Forgot Password?</p>)}
+                    {state !== "Sign Up" &&
+                        (
+                            <p onClick={() => navigate("/reset-password")} className='mb-6 text-indigo-600 cursor-pointer'>Forgot Password?</p>
+                        )}
                     <button className='w-full py-2.5 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white font-medium'>{state}</button>
                 </form>
                 {state === "Sign Up" ? (<p className='text-gray-400 text-center text-xs mt-4'>
